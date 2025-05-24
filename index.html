@@ -1,1 +1,421 @@
-# quizmim
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quiz de Bandeiras - Ásia Central e Sul</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+  /* Reset and body styling */
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Orbitron', monospace, monospace;
+    background: #000;
+    color: #1e90ff; /* Azul como padrão */
+  }
+
+  /* Canvas background */
+  #binary-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background-color: black;
+    display: block;
+  }
+
+  /* Quiz container on top */
+  .quiz-container {
+    position: relative;
+    z-index: 10;
+    background: rgba(0,0,0,0.7);
+    max-width: 720px;
+    width: 90%;
+    border-radius: 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    padding: 50px 40px 60px;
+    text-align: center;
+    user-select: none;
+    margin: 40px auto;
+    color: #1e90ff; /* texto azul padrão dentro do container */
+  }
+  h1 {
+    margin-bottom: 15px;
+    font-weight: 700;
+    font-size: 3.6rem;
+    /* Azul sem sombra amarela */
+    color: #1e90ff;
+    text-shadow:
+      0 0 8px #1e90ff;
+  }
+  #question-number {
+    font-weight: 700;
+    margin-bottom: 35px;
+    letter-spacing: 2px;
+    font-size: 1.7rem;
+    color: #ffff33; /* amarelo */
+    text-shadow:
+      0 0 6px #ffff33,
+      0 0 10px #1e90ff;
+  }
+  .flag-image {
+    max-width: 400px;
+    margin-bottom: 40px;
+    border-radius: 10px;
+    border: 4px solid #1e90ff;
+    box-shadow: 0 6px 20px rgba(30, 144, 255, 0.8);
+  }
+  .answers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px;
+    margin-bottom: 20px; /* reduced bottom margin to make room */
+  }
+  .answer-btn {
+    background: #001933;
+    border: none;
+    border-radius: 10px;
+    color: #ffff33; /* amarelo */
+    padding: 20px 32px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1.4rem;
+    flex: 1 1 40%;
+    max-width: 280px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+    box-shadow: 0 3px 18px #666600cc;
+    user-select: none;
+  }
+  .answer-btn:hover:not(:disabled) {
+    background-color: #1e90ff; /* azul */
+    color: #ffff33; /* amarelo */
+    box-shadow: 0 0 24px #1e90ffcc;
+  }
+  .answer-btn:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  .correct {
+    background-color: #4caf50 !important; /* verde */
+    box-shadow: 0 3px 20px #2e7d32cc;
+    color: #003300 !important;
+  }
+  .wrong {
+    background-color: #e53935 !important; /* vermelho */
+    box-shadow: 0 3px 20px #b71c1ccc;
+    color: #330000 !important;
+  }
+  #next-btn {
+    background: #1e90ff;
+    border: none;
+    border-radius: 10px;
+    padding: 20px 48px;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: #ffff33;
+    cursor: pointer;
+    box-shadow: 0 4px 22px #114499cc;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    display: none;
+    margin: 0 auto;
+  }
+  #next-btn:hover {
+    background-color: #003fbb;
+  }
+  #score-container {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-top: 30px;
+    color: #ffff33;
+    text-shadow: 0 0 10px #ffff33bb, 0 0 14px #1e90ffbb;
+  }
+  #detailed-result {
+    margin-top: 8px; /* smaller margin */
+    font-size: 1rem; /* smaller font size for neatness */
+    font-weight: 600;
+    color: #cccc33bb; /* amarelo suave */
+    text-shadow: 0 0 4px #5599ff88;
+    min-height: 1.4em; /* reserve vertical space to prevent layout jump */
+  }
+  #restart-btn {
+    background: #ffff33;
+    border: none;
+    border-radius: 10px;
+    padding: 20px 48px;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: #1e90ff;
+    cursor: pointer;
+    box-shadow: 0 4px 22px #666600cc;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    margin-top: 30px;
+    display: none;
+  }
+  #restart-btn:hover {
+    background-color: #bbbb00;
+    color: #001a44;
+  }
+  footer {
+    margin-top: 55px;
+    font-size: 1.2rem;
+    color: #1e90ffcc;
+    text-shadow: 0 0 5px #ffff33bb;
+  }
+  @media (max-width: 900px){
+    .answer-btn {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+    .flag-image {
+      max-width: 100%;
+    }
+    .quiz-container {
+      padding: 40px 20px 50px;
+      max-width: 95%;
+    }
+  }
+</style>
+</head>
+<body>
+  <canvas id="binary-bg" aria-hidden="true"></canvas>
+
+  <div class="quiz-container" role="main" aria-label="Quiz de bandeiras da Ásia Central e Sul">
+    <h1>Desafio das bandeiras dos paises da asia centrale sul</h1>
+    <div id="question-number" aria-live="polite"></div>
+    <img id="flag" src="" alt="Bandeira" class="flag-image" />
+    <div class="answers" role="list" id="answers-list"></div>
+    <button id="next-btn" aria-label="Próxima pergunta">Próxima</button>
+    <div id="score-container" aria-live="polite"></div>
+    <div id="detailed-result" aria-live="polite"></div>
+    <button id="restart-btn" aria-label="Reiniciar quiz">Reiniciar Quiz</button>
+    <footer>Ásia Central & Sul - Quiz de bandeiras</footer>
+  </div>
+
+<script>
+  // Quiz data
+  const quizData = [
+    {
+      country: "Cazaquistão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Flag_of_Kazakhstan.svg/320px-Flag_of_Kazakhstan.svg.png",
+      options: ["Uzbequistão", "Cazaquistão", "Quirguistão", "Tajiquistão"]
+    },
+    {
+      country: "Uzbequistão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Flag_of_Uzbekistan.svg/320px-Flag_of_Uzbekistan.svg.png",
+      options: ["Turcomenistão", "Paquistão", "Uzbequistão", "Butão"]
+    },
+    {
+      country: "Turcomenistão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Flag_of_Turkmenistan.svg/320px-Flag_of_Turkmenistan.svg.png",
+      options: ["Turcomenistão", "Sri Lanka", "Nepal", "Afeganistão"]
+    },
+    {
+      country: "Quirguistão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Flag_of_Kyrgyzstan.svg/320px-Flag_of_Kyrgyzstan.svg.png",
+      options: ["Quirguistão", "Bangladesh", "Maldivas", "Índia"]
+    },
+    {
+      country: "Tajiquistão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Flag_of_Tajikistan.svg/320px-Flag_of_Tajikistan.svg.png",
+      options: ["Tajiquistão", "Paquistão", "Butão", "Nepal"]
+    },
+    {
+      country: "Índia",
+      flag: "https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/320px-Flag_of_India.svg.png",
+      options: ["Índia", "Bangladesh", "Sri Lanka", "Afeganistão"]
+    },
+    {
+      country: "Paquistão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Flag_of_Pakistan.svg/320px-Flag_of_Pakistan.svg.png",
+      options: ["Nepal", "Turcomenistão", "Paquistão", "Maldivas"]
+    },
+    {
+      country: "Bangladesh",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Flag_of_Bangladesh.svg/320px-Flag_of_Bangladesh.svg.png",
+      options: ["Bangladesh", "Cazaquistão", "Butão", "Quirguistão"]
+    },
+    {
+      country: "Nepal",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Flag_of_Nepal.svg/240px-Flag_of_Nepal.svg.png",
+      options: ["Maldivas", "Nepal", "Sri Lanka", "Afeganistão"]
+    },
+    {
+      country: "Sri Lanka",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Flag_of_Sri_Lanka.svg/320px-Flag_of_Sri_Lanka.svg.png",
+      options: ["Sri Lanka", "Paquistão", "Uzbequistão", "Índia"]
+    },
+    {
+      country: "Butão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Flag_of_Bhutan.svg/320px-Flag_of_Bhutan.svg.png",
+      options: ["Quirguistão", "Butão", "Turcomenistão", "Bangladesh"]
+    },
+    {
+      country: "Maldivas",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Flag_of_Maldives.svg/320px-Flag_of_Maldives.svg.png",
+      options: ["Maldivas", "Nepal", "Paquistão", "Índia"]
+    },
+    {
+      country: "Afeganistão",
+      flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Flag_of_the_Taliban.svg/320px-Flag_of_the_Taliban.svg.png",
+      options: ["Afeganistão", "Cazaquistão", "Butão", "Sri Lanka"]
+    }
+  ];
+
+  const questionNumberElement = document.getElementById('question-number');
+  const flagImageElement = document.getElementById('flag');
+  const answersListElement = document.getElementById('answers-list');
+  const nextBtn = document.getElementById('next-btn');
+  const scoreContainer = document.getElementById('score-container');
+  const restartBtn = document.getElementById('restart-btn');
+  const detailedResult = document.getElementById('detailed-result');
+
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let wrong = 0;
+  let answered = false;
+
+  function shuffleArray(array) {
+    for(let i = array.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function loadQuestion() {
+    answered = false;
+    nextBtn.style.display = 'none';
+    restartBtn.style.display = 'none';
+    scoreContainer.textContent = '';
+    detailedResult.textContent = '';
+    const currentQuestion = quizData[currentQuestionIndex];
+
+    questionNumberElement.textContent = `Pergunta ${currentQuestionIndex + 1} de ${quizData.length}`;
+    flagImageElement.src = currentQuestion.flag;
+    flagImageElement.alt = `Bandeira do(a) ${currentQuestion.country}`;
+    flagImageElement.style.display = '';
+
+    answersListElement.innerHTML = '';
+    const options = shuffleArray([...currentQuestion.options]);
+
+    options.forEach(option => {
+      const button = document.createElement('button');
+      button.classList.add('answer-btn');
+      button.textContent = option;
+      button.setAttribute('role', 'listitem');
+      button.onclick = () => selectAnswer(button, currentQuestion.country);
+      answersListElement.appendChild(button);
+    });
+  }
+
+  function selectAnswer(selectedBtn, correctCountry) {
+    if (answered) return;
+    answered = true;
+
+    const buttons = answersListElement.querySelectorAll('button');
+    buttons.forEach(btn => btn.disabled = true);
+
+    if (selectedBtn.textContent === correctCountry) {
+      selectedBtn.classList.add('correct');
+      score++;
+      detailedResult.textContent = 'Resposta correta! 🎉';
+    } else {
+      selectedBtn.classList.add('wrong');
+      wrong++;
+      buttons.forEach(btn => {
+        if (btn.textContent === correctCountry) {
+          btn.classList.add('correct');
+        }
+      });
+      detailedResult.textContent = `Resposta incorreta! A resposta certa é: ${correctCountry}`;
+    }
+    nextBtn.style.display = 'inline-block';
+  }
+
+  function showScore() {
+    questionNumberElement.textContent = 'Quiz finalizado!';
+    flagImageElement.style.display = 'none';
+    answersListElement.innerHTML = '';
+    scoreContainer.textContent = `Você acertou ${score} de ${quizData.length} perguntas!`;
+    detailedResult.textContent = `Erros: ${wrong}`;
+    restartBtn.style.display = 'inline-block';
+    nextBtn.style.display = 'none';
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < quizData.length){
+      loadQuestion();
+    } else {
+      showScore();
+    }
+  });
+
+  restartBtn.addEventListener('click', () => {
+    currentQuestionIndex = 0;
+    score = 0;
+    wrong = 0;
+    loadQuestion();
+  });
+
+  loadQuestion();
+
+  // Background binário animado com azul e amarelo
+  const canvas = document.getElementById('binary-bg');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    columns = Math.floor(canvas.width / fontSize);
+    drops.length = columns;
+    for(let x = 0; x < columns; x++){
+      drops[x] = Math.random() * canvas.height;
+    }
+  });
+
+  const fontSize = 18;
+  let columns = Math.floor(canvas.width / fontSize);
+
+  const drops = [];
+  for(let x = 0; x < columns; x++){
+    drops[x] = Math.random() * canvas.height;
+  }
+
+  function drawBinary(){
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = fontSize + 'px monospace';
+
+    for(let i = 0; i < drops.length; i++){
+      const binaryChar = Math.random() > 0.5 ? '0' : '1';
+      ctx.fillStyle = (i % 2 === 0) ? '#1e90ff' : '#ffff33'; // azul ou amarelo
+      ctx.fillText(binaryChar, i * fontSize, drops[i]);
+
+      drops[i] += fontSize;
+
+      if(drops[i] > canvas.height && Math.random() > 0.975){
+        drops[i] = 0;
+      }
+    }
+    requestAnimationFrame(drawBinary);
+  }
+
+  drawBinary();
+
+</script>
+</body>
+</html>
+
